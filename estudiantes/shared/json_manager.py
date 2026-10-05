@@ -12,7 +12,6 @@ class GestorJSON:
             os.makedirs(carpeta)
 
     def leer(self):
-        # Devuelve SIEMPRE una lista: vacía si el archivo no existe o está dañado
         if not os.path.exists(self.ruta):
             return []
         try:
@@ -28,5 +27,4 @@ class GestorJSON:
                 json.dump(datos, archivo, ensure_ascii=False, indent=2)
             return True
         except (TypeError, OSError):
-            # TypeError aparece si intentas guardar un set: JSON no lo conoce
             return False

@@ -5,7 +5,8 @@ from shared.herramientas import (
 from views import (
     crear_estudiante, obtener_todos, obtener_por_id, buscar_estudiantes,
     actualizar_estudiante, eliminar_estudiante, agregar_nota, promedio_de,
-    promedio_por_materia, materias_ofertadas, estudiantes_en_comun, estadisticas
+    promedio_por_materia, materias_ofertadas, estudiantes_por_materia,
+    estudiantes_en_comun, estadisticas
 )
 
 
@@ -14,12 +15,18 @@ def pausa():
 
 
 def pedir_id(texto="Id del estudiante: "):
-    """Devuelve el id como entero, o None si lo escribieron mal."""
     try:
         return int(input(texto))
     except ValueError:
         imprimir_error("El id debe ser un número entero")
         return None
+
+
+def mostrar_resultado(exito, mensaje):
+    if exito:
+        imprimir_exito(mensaje)
+    else:
+        imprimir_error(mensaje)
 
 
 def mostrar_tabla(estudiantes):
@@ -36,23 +43,20 @@ def mostrar_tabla(estudiantes):
 # ---------- C · CREAR ----------
 def opcion_crear():
     imprimir_titulo("CREAR NUEVO ESTUDIANTE")
-    # Recorro la TUPLA de campos: si mañana agrego un campo al Modelo,
-    # este formulario se actualiza solo.
+
     datos = {}
     for campo in CAMPOS_ESTUDIANTE:
         datos[campo] = input(f"{campo.capitalize()}: ")
 
-    exito, mensaje = crear_estudiante(datos)  # desempaqueto la TUPLA que devuelve
-    if exito:
-        imprimir_exito(mensaje)
-    else:
-        imprimir_error(mensaje)
+    exito, mensaje = crear_estudiante(datos)
+    mostrar_resultado(exito, mensaje)
     pausa()
 
 
 # ---------- R · LEER TODOS ----------
 def opcion_ver_todos():
     imprimir_titulo("LISTA DE ESTUDIANTES")
+
     estudiantes = obtener_todos()
     if not estudiantes:
         imprimir_info("Todavía no hay estudiantes. Use la opción 1 para crear el primero.")
@@ -64,6 +68,7 @@ def opcion_ver_todos():
 # ---------- S · BUSCAR ----------
 def opcion_buscar():
     imprimir_titulo("BUSCAR ESTUDIANTE")
+
     termino = input("Nombre, apellido, email o carnet: ")
     encontrados = buscar_estudiantes(termino)
 
@@ -77,16 +82,18 @@ def opcion_buscar():
 # ---------- R · LEER UNO ----------
 def opcion_ver_por_id():
     imprimir_titulo("VER ESTUDIANTE POR ID")
+
     id_estudiante = pedir_id()
     if id_estudiante is None:
-        return pausa()
+        pausa()
+        return
 
     estudiante = obtener_por_id(id_estudiante)
-    if not estudiante:
+    if estudiante is None:
         imprimir_error(f"No existe un estudiante con id {id_estudiante}")
-        return pausa()
+        pausa()
+        return
 
-    # Recorro el DICCIONARIO del estudiante: clave y valor a la vez
     for clave, valor in estudiante.a_diccionario().items():
         print(f"  {clave.capitalize():<12}: {valor}")
     pausa()
@@ -95,19 +102,21 @@ def opcion_ver_por_id():
 # ---------- U · ACTUALIZAR ----------
 def opcion_actualizar():
     imprimir_titulo("ACTUALIZAR ESTUDIANTE")
+
     id_estudiante = pedir_id()
     if id_estudiante is None:
-        return pausa()
+        pausa()
+        return
 
     estudiante = obtener_por_id(id_estudiante)
-    if not estudiante:
+    if estudiante is None:
         imprimir_error(f"No existe un estudiante con id {id_estudiante}")
-        return pausa()
+        pausa()
+        return
 
     imprimir_info(f"Editando a {estudiante.obtener_nombre_completo()}")
     print("Deje en blanco el campo que no quiera cambiar.\n")
 
-    # Armo un DICCIONARIO solo con lo que el usuario escribió
     cambios = {}
     for campo in CAMPOS_ESTUDIANTE:
         actual = getattr(estudiante, campo)
@@ -116,32 +125,29 @@ def opcion_actualizar():
             cambios[campo] = nuevo
 
     exito, mensaje = actualizar_estudiante(id_estudiante, cambios)
-    if exito:
-        imprimir_exito(mensaje)
-    else:
-        imprimir_error(mensaje)
+    mostrar_resultado(exito, mensaje)
     pausa()
 
 
 # ---------- D · ELIMINAR ----------
 def opcion_eliminar():
     imprimir_titulo("ELIMINAR ESTUDIANTE")
+
     id_estudiante = pedir_id()
     if id_estudiante is None:
-        return pausa()
+        pausa()
+        return
 
     estudiante = obtener_por_id(id_estudiante)
-    if not estudiante:
+    if estudiante is None:
         imprimir_error(f"No existe un estudiante con id {id_estudiante}")
-        return pausa()
+        pausa()
+        return
 
     imprimir_info(f"Se eliminará: {estudiante}")
     if confirmar("¿Confirma la eliminación?"):
         exito, mensaje = eliminar_estudiante(id_estudiante)
-        if exito:
-            imprimir_exito(mensaje)
-        else:
-            imprimir_error(mensaje)
+        mostrar_resultado(exito, mensaje)
     else:
         imprimir_info("Operación cancelada")
     pausa()
@@ -150,39 +156,41 @@ def opcion_eliminar():
 # ---------- AGREGAR NOTA ----------
 def opcion_agregar_nota():
     imprimir_titulo("AGREGAR NOTA")
+
     id_estudiante = pedir_id()
     if id_estudiante is None:
-        return pausa()
+        pausa()
+        return
 
     materia = input("Materia: ")
     nota = input("Nota (0 a 20): ")
 
     exito, mensaje = agregar_nota(id_estudiante, materia, nota)
-    if exito:
-        imprimir_exito(mensaje)
-    else:
-        imprimir_error(mensaje)
+    mostrar_resultado(exito, mensaje)
     pausa()
 
 
 # ---------- VER PROMEDIO ----------
 def opcion_ver_promedio():
     imprimir_titulo("PROMEDIO DEL ESTUDIANTE")
+
     id_estudiante = pedir_id()
     if id_estudiante is None:
-        return pausa()
+        pausa()
+        return
 
     exito, promedio = promedio_de(id_estudiante)
     if not exito:
         imprimir_error(promedio)
-        return pausa()
+        pausa()
+        return
 
-    _exito, por_materia = promedio_por_materia(id_estudiante)
+    exito, por_materia = promedio_por_materia(id_estudiante)
     if not por_materia:
         imprimir_info("Este estudiante todavía no tiene notas registradas.")
-        return pausa()
+        pausa()
+        return
 
-    # Recorro el DICCIONARIO {materia: promedio}
     for materia, valor in por_materia.items():
         print(f"  {materia:<20}: {valor}")
     print()
@@ -193,18 +201,22 @@ def opcion_ver_promedio():
 # ---------- MATERIAS EN COMÚN ----------
 def opcion_materias_en_comun():
     imprimir_titulo("MATERIAS EN COMÚN")
+
     id_a = pedir_id("Id del primer estudiante: ")
     if id_a is None:
-        return pausa()
+        pausa()
+        return
 
     id_b = pedir_id("Id del segundo estudiante: ")
     if id_b is None:
-        return pausa()
+        pausa()
+        return
 
     exito, resultado = estudiantes_en_comun(id_a, id_b)
     if not exito:
         imprimir_error(resultado)
-        return pausa()
+        pausa()
+        return
 
     if not resultado:
         imprimir_info("Esos dos estudiantes no comparten ninguna materia.")
@@ -219,6 +231,7 @@ def opcion_materias_en_comun():
 # ---------- MATERIAS OFERTADAS ----------
 def opcion_materias_ofertadas():
     imprimir_titulo("MATERIAS OFERTADAS")
+
     materias = materias_ofertadas()
     if not materias:
         imprimir_info("Todavía no hay materias registradas.")
@@ -230,9 +243,25 @@ def opcion_materias_ofertadas():
     pausa()
 
 
-# ---------- EXTRA · ESTADÍSTICAS ----------
+# ---------- ESTUDIANTES POR MATERIA ----------
+def opcion_estudiantes_por_materia():
+    imprimir_titulo("ESTUDIANTES POR MATERIA")
+
+    agrupados = estudiantes_por_materia()
+    if not agrupados:
+        imprimir_info("Todavía no hay materias con estudiantes.")
+        pausa()
+        return
+
+    for materia, nombres in agrupados.items():
+        print(f"  {materia:<20}: {', '.join(nombres)}")
+    pausa()
+
+
+# ---------- ESTADÍSTICAS ----------
 def opcion_estadisticas():
     imprimir_titulo("ESTADÍSTICAS")
+
     datos = estadisticas()
     print(f"  Estudiantes registrados : {datos['total']}")
     print(f"  Materias distintas      : {len(datos['materias'])} -> {', '.join(datos['materias'])}")
@@ -246,7 +275,6 @@ def salir():
     return "salir"
 
 
-# DICCIONARIO de opciones: tecla -> (texto del menú, función)
 OPCIONES = {
     "1": ("Crear estudiante", opcion_crear),
     "2": ("Ver todos", opcion_ver_todos),
@@ -258,14 +286,16 @@ OPCIONES = {
     "8": ("Ver promedio", opcion_ver_promedio),
     "9": ("Materias en común", opcion_materias_en_comun),
     "10": ("Materias ofertadas", opcion_materias_ofertadas),
-    "11": ("Estadísticas", opcion_estadisticas),
+    "11": ("Estudiantes por materia", opcion_estudiantes_por_materia),
+    "12": ("Estadísticas", opcion_estadisticas),
     "0": ("Salir", salir),
 }
 
 
 def mostrar_menu():
     imprimir_titulo("SISTEMA DE GESTIÓN DE ESTUDIANTES")
-    for tecla, (texto, _funcion) in OPCIONES.items():
+    for tecla in OPCIONES:
+        texto = OPCIONES[tecla][0]
         print(f"  {tecla}. {texto}")
     print()
 
@@ -275,18 +305,15 @@ def main():
         mostrar_menu()
         tecla = input("Seleccione una opción: ").strip()
 
-        if tecla not in OPCIONES:  # búsqueda instantánea por clave
+        if tecla not in OPCIONES:
             imprimir_error("Opción no válida")
             pausa()
             continue
 
-        _texto, funcion = OPCIONES[tecla]
+        funcion = OPCIONES[tecla][1]
         if funcion() == "salir":
             break
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\nPrograma interrumpido por el usuario.")
+    main()

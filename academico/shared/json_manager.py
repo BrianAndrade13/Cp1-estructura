@@ -3,7 +3,6 @@ import os
 
 
 class GestorJSON:
-    """Lee y guarda una lista de diccionarios en un archivo JSON."""
 
     def __init__(self, ruta):
         self.ruta = ruta

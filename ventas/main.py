@@ -1,15 +1,13 @@
 from shared.herramientas import (
     imprimir_titulo, imprimir_exito, imprimir_error, imprimir_info, confirmar
 )
-from models import Devolucion
-from views import ClienteController, ProductoController, VentaController, DevolucionController
+from views import ClienteController, ProductoController, VentaController
 
 # Se crea UN solo controlador de cada tipo.
 # A ventas se le pasan los MISMOS clientes y productos.
 clientes = ClienteController()
 productos = ProductoController()
 ventas = VentaController(clientes, productos)
-devoluciones = DevolucionController(ventas, productos)
 
 
 # =====================================================================
@@ -244,95 +242,15 @@ def anular_venta():
     pausa()
 
 
-# =====================================================================
-# MENÚ DE DEVOLUCIONES
-# =====================================================================
-def registrar_devolucion():
-    imprimir_titulo("REGISTRAR DEVOLUCIÓN")
-    id_venta = pedir_entero("Id de la venta / factura: ")
-    if id_venta is None:
-        imprimir_error("El id debe ser un número entero")
-        return pausa()
-
-    venta = ventas.obtener(id_venta)
-    if venta is None:
-        imprimir_error("No existe esa venta")
-        return pausa()
-
-    print()
-    print(ventas.comprobante(id_venta))
-    print()
-    ya_devueltas = devoluciones.cantidad_devuelta(id_venta)
-    disponibles = devoluciones.cantidad_disponible(venta)
-    imprimir_info(f"Vendidas: {venta.cantidad} · Ya devueltas: {ya_devueltas} · "
-                  f"Disponibles para devolver: {disponibles}")
-    if disponibles == 0:
-        imprimir_info("Esta venta ya no tiene unidades por devolver.")
-        return pausa()
-
-    cantidad = pedir_entero("\nCantidad a devolver: ")
-    if cantidad is None:
-        imprimir_error("La cantidad debe ser un número entero")
-        return pausa()
-
-    opciones = {}
-    print("Motivos:")
-    for numero, motivo in enumerate(Devolucion.MOTIVOS, start=1):
-        opciones[str(numero)] = motivo
-        print(f"  {numero}. {motivo}")
-    escrito = input("Motivo: ").strip().lower()
-    motivo = opciones.get(escrito, escrito)
-
-    datos = {"venta_id": id_venta, "cantidad": cantidad, "motivo": motivo}
-    mostrar_resultado(*devoluciones.crear(datos))
-    pausa()
-
-
-def consultar_devoluciones():
-    imprimir_titulo("DEVOLUCIONES DE UNA VENTA")
-    id_venta = pedir_entero("Id de la venta: ")
-    venta = ventas.obtener(id_venta)
-    if venta is None:
-        imprimir_error("No existe esa venta")
-        return pausa()
-
-    print()
-    print(ventas.comprobante(id_venta))
-    print()
-    mostrar_lista(devoluciones.devoluciones_de_venta(id_venta), "Esta venta no tiene devoluciones.")
-    print()
-    print(f"  Total reembolsado de esta venta: ${devoluciones.total_reembolsado(id_venta):.2f}")
-    print(f"  Disponibles para devolver      : {devoluciones.cantidad_disponible(venta)}")
-    pausa()
-
-
-def listar_devoluciones():
-    imprimir_titulo("DEVOLUCIONES")
-    mostrar_lista(devoluciones.leer(), "Todavía no hay devoluciones.")
-    pausa()
-
-
-def ver_nota_credito():
-    imprimir_titulo("NOTA DE CRÉDITO")
-    texto = devoluciones.nota_credito(pedir_entero("Id de la devolución: "))
-    if texto is None:
-        imprimir_error("No existe esa devolución")
-    else:
-        print(texto)
-    pausa()
-
-
 def resumen():
     imprimir_titulo("RESUMEN")
-    print(f"  Clientes     : {len(clientes.leer())}")
-    print(f"  Ciudades     : {', '.join(clientes.ciudades()) or '-'}")
-    print(f"  Productos    : {len(productos.leer())}")
+    print(f"  Clientes  : {len(clientes.leer())}")
+    print(f"  Ciudades  : {', '.join(clientes.ciudades()) or '-'}")
+    print(f"  Productos : {len(productos.leer())}")
     bajos = productos.con_stock_bajo()
-    print(f"  Stock bajo   : {', '.join(p.nombre for p in bajos) or 'ninguno'}")
-    print(f"  Ventas       : {len(ventas.leer())}")
-    print(f"  Vendido      : ${ventas.total_vendido():.2f}")
-    print(f"  Reembolsado  : ${devoluciones.total_reembolsado():.2f}")
-    print(f"  Ventas netas : ${devoluciones.ventas_netas():.2f}")
+    print(f"  Stock bajo: {', '.join(p.nombre for p in bajos) or 'ninguno'}")
+    print(f"  Ventas    : {len(ventas.leer())}")
+    print(f"  Vendido   : ${ventas.total_vendido():.2f}")
     pausa()
 
 
@@ -367,15 +285,6 @@ MENU_VENTAS = {
     "0": ("Volver", None),
 }
 
-# diccionario: cada tecla apunta al texto del menú y a la función que se ejecuta
-MENU_DEVOLUCIONES = {
-    "1": ("Registrar devolución", registrar_devolucion),
-    "2": ("Consultar devoluciones de una venta", consultar_devoluciones),
-    "3": ("Ver todas", listar_devoluciones),
-    "4": ("Ver nota de crédito", ver_nota_credito),
-    "0": ("Volver", None),
-}
-
 
 def ejecutar_menu(titulo, opciones):
     """Un solo bucle para los tres submenús."""
@@ -401,8 +310,7 @@ def main():
         print("  1. Clientes")
         print("  2. Productos")
         print("  3. Ventas")
-        print("  4. Devoluciones")
-        print("  5. Resumen")
+        print("  4. Resumen")
         print("  0. Salir\n")
         tecla = input("Opción: ").strip()
         if tecla == "1":
@@ -412,8 +320,6 @@ def main():
         elif tecla == "3":
             ejecutar_menu("VENTAS", MENU_VENTAS)
         elif tecla == "4":
-            ejecutar_menu("DEVOLUCIONES", MENU_DEVOLUCIONES)
-        elif tecla == "5":
             resumen()
         elif tecla == "0":
             imprimir_info("¡Hasta luego! 👋")

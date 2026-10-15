@@ -3,7 +3,7 @@ import os
 
 
 class GestorJSON:
-    """Lee y guarda una lista de diccionarios en un archivo JSON."""
+    """Lee y guarda una lista de diccionarios. Es la única parte que toca el disco."""
 
     def __init__(self, ruta):
         self.ruta = ruta
@@ -29,5 +29,4 @@ class GestorJSON:
                 json.dump(datos, archivo, ensure_ascii=False, indent=2)
             return True
         except (TypeError, OSError):
-            # TypeError aparece si intentas guardar un set: JSON no lo conoce
             return False
